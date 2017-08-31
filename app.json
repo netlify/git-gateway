@@ -1,0 +1,33 @@
+{
+  "name": "git-gateway",
+  "description": "",
+  "website": "https://www.git-gatewayapi.org",
+  "repository": "https://github.com/netlify/git-gateway",
+  "env": {
+    "DATABASE_URL": {},
+    "git-gateway_DB_DRIVER": {
+      "value": "sqlite3"
+    },
+    "git-gateway_DB_AUTOMIGRATE": {
+      "value": true
+    },
+    "git-gateway_DB_NAMESPACE": {
+      "value": "auth"
+    },
+    "git-gateway_JWT_SECRET": {
+      "required": true
+    },
+    "git-gateway_MAILER_ADMIN_EMAIL": {},
+    "git-gateway_MAILER_HOST": {},
+    "git-gateway_MAILER_MEMBER_FOLDER": {},
+    "git-gateway_MAILER_PASS": {},
+    "git-gateway_MAILER_PORT": {},
+    "git-gateway_MAILER_SITE_URL": {},
+    "git-gateway_MAILER_SUBJECTS_CONFIRMATION": {},
+    "git-gateway_MAILER_SUBJECTS_RECOVERY": {},
+    "git-gateway_MAILER_TEMPLATES_CONFIRMATION": {},
+    "git-gateway_MAILER_TEMPLATES_EMAIL_CHANGE": {},
+    "git-gateway_MAILER_TEMPLATES_RECOVERY": {},
+    "git-gateway_MAILER_USER": {}
+  }
+}

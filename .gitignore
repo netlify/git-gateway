@@ -1,0 +1,11 @@
+.env
+gorm.db
+vendor/
+git-gateway
+
+.DS_Store
+.vscode
+www/dist/
+www/.DS_Store
+www/node_modules
+npm-debug.log
