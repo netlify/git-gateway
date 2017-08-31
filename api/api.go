@@ -7,7 +7,6 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/chi"
-	"github.com/netlify/git-gateway/api/gateways"
 	"github.com/netlify/git-gateway/conf"
 	"github.com/netlify/git-gateway/storage"
 	"github.com/netlify/git-gateway/storage/dial"
@@ -72,11 +71,12 @@ func NewAPIWithVersion(ctx context.Context, globalConfig *conf.GlobalConfigurati
 	r.Get("/health", api.HealthCheck)
 
 	r.Route("/", func(r *router) {
+
 		if globalConfig.MultiInstanceMode {
 			r.Use(api.loadJWSSignatureHeader)
 			r.Use(api.loadInstanceConfig)
 		}
-		r.Mount("/github", &gateways.GitHubGateway{})
+		r.With(api.requireAuthentication).Mount("/github", NewGitHubGateway())
 	})
 
 	if globalConfig.MultiInstanceMode {
@@ -122,6 +122,7 @@ func NewAPIFromConfigFile(filename string, version string) (*API, error) {
 		return nil, err
 	}
 
+	logrus.Infof("Config is: %v", config)
 	ctx, err := WithInstanceConfig(context.Background(), config, "")
 	if err != nil {
 		logrus.Fatalf("Error loading instance config: %+v", err)
@@ -143,14 +144,4 @@ func WithInstanceConfig(ctx context.Context, config *conf.Configuration, instanc
 	ctx = withInstanceID(ctx, instanceID)
 
 	return ctx, nil
-}
-
-func (a *API) getConfig(ctx context.Context) *conf.Configuration {
-	obj := ctx.Value(configKey)
-	if obj == nil {
-		return nil
-	}
-
-	config := obj.(*conf.Configuration)
-	return config
 }

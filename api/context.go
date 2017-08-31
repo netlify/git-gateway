@@ -2,11 +2,16 @@ package api
 
 import (
 	"context"
+	"net/url"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/netlify/git-gateway/conf"
 	"github.com/netlify/git-gateway/models"
 )
+
+type Role struct {
+	Name string
+}
 
 type contextKey string
 
@@ -15,13 +20,15 @@ func (c contextKey) String() string {
 }
 
 const (
-	tokenKey      = contextKey("jwt")
-	requestIDKey  = contextKey("request_id")
-	configKey     = contextKey("config")
-	instanceIDKey = contextKey("instance_id")
-	instanceKey   = contextKey("instance")
-	signatureKey  = contextKey("signature")
-	netlifyIDKey  = contextKey("netlify_id")
+	accessTokenKey = contextKey("access_token")
+	tokenKey       = contextKey("jwt")
+	requestIDKey   = contextKey("request_id")
+	configKey      = contextKey("config")
+	instanceIDKey  = contextKey("instance_id")
+	instanceKey    = contextKey("instance")
+	proxyTargetKey = contextKey("target")
+	signatureKey   = contextKey("signature")
+	netlifyIDKey   = contextKey("netlify_id")
 )
 
 // withToken adds the JWT token to the context.
@@ -47,6 +54,11 @@ func getClaims(ctx context.Context) *GatewayClaims {
 	return token.Claims.(*GatewayClaims)
 }
 
+// TODO: actually get this from the config rather than hardcoding
+func getRoles(ctx context.Context) []Role {
+	return []Role{Role{Name: "admin"}, Role{Name: "cms"}}
+}
+
 func withRequestID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, requestIDKey, id)
 }
@@ -60,12 +72,46 @@ func getRequestID(ctx context.Context) string {
 	return obj.(string)
 }
 
+func getConfig(ctx context.Context) *conf.Configuration {
+	obj := ctx.Value(configKey)
+	if obj == nil {
+		return nil
+	}
+
+	config := obj.(*conf.Configuration)
+	return config
+}
+
 func withConfig(ctx context.Context, config *conf.Configuration) context.Context {
 	return context.WithValue(ctx, configKey, config)
 }
 
 func withInstanceID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, instanceIDKey, id)
+}
+
+func withProxyTarget(ctx context.Context, target *url.URL) context.Context {
+	return context.WithValue(ctx, proxyTargetKey, target)
+}
+
+func getProxyTarget(ctx context.Context) *url.URL {
+	obj := ctx.Value(proxyTargetKey)
+	if obj == nil {
+		return nil
+	}
+	return obj.(*url.URL)
+}
+
+func withAccessToken(ctx context.Context, token string) context.Context {
+	return context.WithValue(ctx, accessTokenKey, token)
+}
+
+func getAccessToken(ctx context.Context) string {
+	obj := ctx.Value(accessTokenKey)
+	if obj == nil {
+		return ""
+	}
+	return obj.(string)
 }
 
 func getInstanceID(ctx context.Context) string {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
@@ -26,4 +27,17 @@ func sendJSON(w http.ResponseWriter, status int, obj interface{}) error {
 	w.WriteHeader(status)
 	_, err = w.Write(b)
 	return err
+}
+
+// From https://golang.org/src/net/http/httputil/reverseproxy.go?s=2298:2359#L72
+func singleJoiningSlash(a, b string) string {
+	aslash := strings.HasSuffix(a, "/")
+	bslash := strings.HasPrefix(b, "/")
+	switch {
+	case aslash && bslash:
+		return a + b[1:]
+	case !aslash && !bslash:
+		return a + "/" + b
+	}
+	return a + b
 }

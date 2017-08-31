@@ -8,16 +8,10 @@ import (
 	"github.com/netlify/netlify-commons/nconf"
 )
 
-type Role struct {
-	Name string `json:"name"`
-	// TODO: fine grained permissions
-}
-
 type GitHubConfig struct {
-	AccessToken string `json:"access_token"`
-	Endpoint    string `json:"endpoint"`
-	Repo        string `json:"repo"` // Should be "owner/repo" format
-	Roles       []Role `json:"roles"`
+	AccessToken string `envconfig:"ACCESS_TOKEN" json:"access_token"`
+	Endpoint    string `envconfig:"ENDPOINT" json:"endpoint"`
+	Repo        string `envconfig:"REPO" json:"repo"` // Should be "owner/repo" format
 }
 
 // DBConfiguration holds all the database related configuration.
@@ -50,7 +44,7 @@ type GlobalConfiguration struct {
 // Configuration holds all the per-instance configuration.
 type Configuration struct {
 	JWT    JWTConfiguration `json:"jwt"`
-	GitHub GitHubConfig     `json:"github,omitempty"`
+	GitHub GitHubConfig     `envconfig:"GITHUB" json:"github"`
 }
 
 func loadEnvironment(filename string) error {

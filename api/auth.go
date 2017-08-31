@@ -33,7 +33,7 @@ func (a *API) extractBearerToken(w http.ResponseWriter, r *http.Request) (string
 
 func (a *API) parseJWTClaims(bearer string, r *http.Request) (context.Context, error) {
 	ctx := r.Context()
-	config := a.getConfig(ctx)
+	config := getConfig(ctx)
 
 	p := jwt.Parser{ValidMethods: []string{jwt.SigningMethodHS256.Name}}
 	token, err := p.ParseWithClaims(bearer, &GatewayClaims{}, func(token *jwt.Token) (interface{}, error) {
