@@ -5,15 +5,18 @@ import (
 	"net/http"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/sirupsen/logrus"
 )
 
 // requireAuthentication checks incoming requests for tokens presented using the Authorization header
 func (a *API) requireAuthentication(w http.ResponseWriter, r *http.Request) (context.Context, error) {
+	logrus.Info("Getting auth token")
 	token, err := a.extractBearerToken(w, r)
 	if err != nil {
 		return nil, err
 	}
 
+	logrus.Infof("Parsing JWT claims: %v", token)
 	return a.parseJWTClaims(token, r)
 }
 
