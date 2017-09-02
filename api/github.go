@@ -7,8 +7,6 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-
-	"github.com/sirupsen/logrus"
 )
 
 // GitHubGateway acts as a proxy to GitHub
@@ -49,7 +47,9 @@ func director(r *http.Request) {
 	if r.Method != http.MethodOptions {
 		r.Header.Set("Authorization", "Bearer "+accessToken)
 	}
-	logrus.Infof("Proxying to: %v", r.URL.String())
+
+	log := getLogEntry(r)
+	log.Infof("Proxying to GitHub: %v", r.URL.String())
 }
 
 func (gh *GitHubGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -73,9 +73,9 @@ func (gh *GitHubGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	var apiURL string
 	if strings.HasSuffix(endpoint, "/") {
-		apiURL = endpoint + config.GitHub.Repo
+		apiURL = endpoint + "repos/" + config.GitHub.Repo
 	} else {
-		apiURL = endpoint + "/" + config.GitHub.Repo
+		apiURL = endpoint + "/repos/" + config.GitHub.Repo
 	}
 
 	target, err := url.Parse(apiURL)
