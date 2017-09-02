@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/netlify/git-gateway/conf"
 	"github.com/netlify/git-gateway/models"
 )
 
@@ -30,40 +31,41 @@ func (a *API) loadJWSSignatureHeader(w http.ResponseWriter, r *http.Request) (co
 
 func (a *API) loadInstanceConfig(w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	ctx := r.Context()
-	config := getConfig(ctx)
-
 	signature := getSignature(ctx)
 	if signature == "" {
 		return nil, badRequestError("Operator signature missing")
 	}
 
+	var config *conf.Configuration
+	var instanceID string
+
 	claims := NetlifyMicroserviceClaims{}
 	p := jwt.Parser{ValidMethods: []string{jwt.SigningMethodHS256.Name}}
 	_, err := p.ParseWithClaims(signature, &claims, func(token *jwt.Token) (interface{}, error) {
+		instanceID = claims.InstanceID
+		if instanceID == "" {
+			return nil, badRequestError("Instance ID is missing")
+		}
+
+		logEntrySetField(r, "instance_id", instanceID)
+		logEntrySetField(r, "netlify_id", claims.NetlifyID)
+		instance, err := a.db.GetInstance(instanceID)
+		if err != nil {
+			if models.IsNotFoundError(err) {
+				return nil, notFoundError("Unable to locate site configuration")
+			}
+			return nil, internalServerError("Database error loading instance").WithInternalError(err)
+		}
+
+		config, err = instance.Config()
+		if err != nil {
+			return nil, internalServerError("Error loading environment config").WithInternalError(err)
+		}
+
 		return []byte(config.JWT.Secret), nil
 	})
 	if err != nil {
 		return nil, badRequestError("Operator microservice signature is invalid: %v", err)
-	}
-
-	instanceID := claims.InstanceID
-	if instanceID == "" {
-		return nil, badRequestError("Instance ID is missing")
-	}
-
-	logEntrySetField(r, "instance_id", instanceID)
-	logEntrySetField(r, "netlify_id", claims.NetlifyID)
-	instance, err := a.db.GetInstance(instanceID)
-	if err != nil {
-		if models.IsNotFoundError(err) {
-			return nil, notFoundError("Unable to locate site configuration")
-		}
-		return nil, internalServerError("Database error loading instance").WithInternalError(err)
-	}
-
-	config, err := instance.Config()
-	if err != nil {
-		return nil, internalServerError("Error loading environment config").WithInternalError(err)
 	}
 
 	ctx = withNetlifyID(ctx, claims.NetlifyID)
