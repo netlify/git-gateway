@@ -1,10 +1,12 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"regexp"
+	"strings"
 )
 
 // GitHubGateway acts as a proxy to GitHub
@@ -15,6 +17,7 @@ type GitHubGateway struct {
 const defaultEndpoint = "https://api.github.com"
 
 var pathRegexp = regexp.MustCompile("^/github/?")
+var allowedRegexp = regexp.MustCompile("^/github/(git|contents|pulls|branches)/")
 
 func NewGitHubGateway() *GitHubGateway {
 	return &GitHubGateway{
@@ -54,8 +57,8 @@ func (gh *GitHubGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !gh.authenticate(w, r) {
-		handleError(unauthorizedError("Not authorized to access this endpoint"), w, r)
+	if err := gh.authenticate(w, r); err != nil {
+		handleError(unauthorizedError(err.Error()), w, r)
 		return
 	}
 
@@ -65,8 +68,14 @@ func (gh *GitHubGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else {
 		endpoint = defaultEndpoint
 	}
+	var apiURL string
+	if strings.HasSuffix(endpoint, "/") {
+		apiURL = endpoint + config.GitHub.Repo
+	} else {
+		apiURL = endpoint + "/" + config.GitHub.Repo
+	}
 
-	target, err := url.Parse(endpoint)
+	target, err := url.Parse(apiURL)
 	if err != nil {
 		handleError(internalServerError("Unable to process GitHub endpoint"), w, r)
 		return
@@ -76,21 +85,17 @@ func (gh *GitHubGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	gh.proxy.ServeHTTP(w, r.WithContext(ctx))
 }
 
-func (gh *GitHubGateway) authenticate(w http.ResponseWriter, r *http.Request) bool {
+func (gh *GitHubGateway) authenticate(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	claims := getClaims(ctx)
 	adminRoles := getRoles(ctx)
-	config := getConfig(ctx)
 
 	if claims == nil {
-		return false
+		return errors.New("Access to endpoint not allowed: no claims found in Bearer token")
 	}
 
-	if config.GitHub.Repo != "" {
-		repoRegexp := regexp.MustCompile("^/github/repos/" + config.GitHub.Repo + "/?")
-		if !repoRegexp.MatchString(r.URL.Path) {
-			return false
-		}
+	if !allowedRegexp.MatchString(r.URL.Path) {
+		return errors.New("Access to endpoint not allowed: this part of GitHub's API has been restricted")
 	}
 
 	roles, ok := claims.AppMetaData["roles"]
@@ -100,11 +105,11 @@ func (gh *GitHubGateway) authenticate(w http.ResponseWriter, r *http.Request) bo
 			role, _ := data.(string)
 			for _, adminRole := range adminRoles {
 				if role == adminRole.Name {
-					return true
+					return nil
 				}
 			}
 		}
 	}
 
-	return false
+	return errors.New("Access to endpoint not allowed: your role doesn't allow access")
 }
