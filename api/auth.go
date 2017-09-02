@@ -35,16 +35,13 @@ func (a *API) extractBearerToken(w http.ResponseWriter, r *http.Request) (string
 }
 
 func (a *API) parseJWTClaims(bearer string, r *http.Request) (context.Context, error) {
-	ctx := r.Context()
-	config := getConfig(ctx)
-
 	p := jwt.Parser{ValidMethods: []string{jwt.SigningMethodHS256.Name}}
 	token, err := p.ParseWithClaims(bearer, &GatewayClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(config.JWT.Secret), nil
+		return []byte(a.config.OperatorToken), nil
 	})
 	if err != nil {
 		return nil, unauthorizedError("Invalid token: %v", err)
 	}
 
-	return withToken(ctx, token), nil
+	return withToken(r.Context(), token), nil
 }
