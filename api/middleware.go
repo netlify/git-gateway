@@ -30,6 +30,7 @@ func (a *API) loadJWSSignatureHeader(w http.ResponseWriter, r *http.Request) (co
 
 func (a *API) loadInstanceConfig(w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	ctx := r.Context()
+	config := getConfig(ctx)
 
 	signature := getSignature(ctx)
 	if signature == "" {
@@ -39,7 +40,7 @@ func (a *API) loadInstanceConfig(w http.ResponseWriter, r *http.Request) (contex
 	claims := NetlifyMicroserviceClaims{}
 	p := jwt.Parser{ValidMethods: []string{jwt.SigningMethodHS256.Name}}
 	_, err := p.ParseWithClaims(signature, &claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(a.config.OperatorToken), nil
+		return []byte(config.JWT.Secret), nil
 	})
 	if err != nil {
 		return nil, badRequestError("Operator microservice signature is invalid: %v", err)
