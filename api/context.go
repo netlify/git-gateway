@@ -54,11 +54,6 @@ func getClaims(ctx context.Context) *GatewayClaims {
 	return token.Claims.(*GatewayClaims)
 }
 
-// TODO: actually get this from the config rather than hardcoding
-func getRoles(ctx context.Context) []Role {
-	return []Role{Role{Name: "admin"}, Role{Name: "cms"}}
-}
-
 func withRequestID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, requestIDKey, id)
 }
