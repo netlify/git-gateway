@@ -91,7 +91,7 @@ func (gh *GitHubGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (gh *GitHubGateway) authenticate(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	claims := getClaims(ctx)
-	adminRoles := getRoles(ctx)
+	config := getConfig(ctx)
 
 	if claims == nil {
 		return errors.New("Access to endpoint not allowed: no claims found in Bearer token")
@@ -101,7 +101,7 @@ func (gh *GitHubGateway) authenticate(w http.ResponseWriter, r *http.Request) er
 		return errors.New("Access to endpoint not allowed: this part of GitHub's API has been restricted")
 	}
 
-	if len(adminRoles) == 0 {
+	if len(config.Roles) == 0 {
 		return nil
 	}
 
@@ -110,8 +110,8 @@ func (gh *GitHubGateway) authenticate(w http.ResponseWriter, r *http.Request) er
 		roleStrings, _ := roles.([]interface{})
 		for _, data := range roleStrings {
 			role, _ := data.(string)
-			for _, adminRole := range adminRoles {
-				if role == adminRole.Name {
+			for _, adminRole := range config.Roles {
+				if role == adminRole {
 					return nil
 				}
 			}
