@@ -101,6 +101,10 @@ func (gh *GitHubGateway) authenticate(w http.ResponseWriter, r *http.Request) er
 		return errors.New("Access to endpoint not allowed: this part of GitHub's API has been restricted")
 	}
 
+	if len(adminRoles) == 0 {
+		return nil
+	}
+
 	roles, ok := claims.AppMetaData["roles"]
 	if ok {
 		roleStrings, _ := roles.([]interface{})

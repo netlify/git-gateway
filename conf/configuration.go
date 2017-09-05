@@ -45,6 +45,7 @@ type GlobalConfiguration struct {
 type Configuration struct {
 	JWT    JWTConfiguration `json:"jwt"`
 	GitHub GitHubConfig     `envconfig:"GITHUB" json:"github"`
+	Roles  []string         `envconfig:"ROLES" json:"roles"`
 }
 
 func loadEnvironment(filename string) error {
