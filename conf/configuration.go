@@ -1,12 +1,16 @@
 package conf
 
 import (
+	"encoding/json"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/netlify/netlify-commons/nconf"
 )
+
+const DefaultGitHubEndpoint = "https://api.github.com"
 
 type GitHubConfig struct {
 	AccessToken string `envconfig:"ACCESS_TOKEN" json:"access_token"`
@@ -46,6 +50,29 @@ type Configuration struct {
 	JWT    JWTConfiguration `json:"jwt"`
 	GitHub GitHubConfig     `envconfig:"GITHUB" json:"github"`
 	Roles  []string         `envconfig:"ROLES" json:"roles"`
+}
+
+func maskAccessToken(token string) string {
+	return strings.Repeat("*", len(token))
+}
+
+func githubEndpoint(endpoint string) string {
+	if endpoint == "" {
+		return DefaultGitHubEndpoint
+	}
+	return endpoint
+}
+
+func (gh *GitHubConfig) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		AccessToken string `json:"access_token"`
+		Endpoint    string `json:"endpoint"`
+		Repo        string `json:"repo"`
+	}{
+		AccessToken: maskAccessToken(gh.AccessToken),
+		Endpoint:    githubEndpoint(gh.Endpoint),
+		Repo:        gh.Repo,
+	})
 }
 
 func loadEnvironment(filename string) error {

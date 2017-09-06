@@ -7,14 +7,14 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/netlify/git-gateway/conf"
 )
 
 // GitHubGateway acts as a proxy to GitHub
 type GitHubGateway struct {
 	proxy *httputil.ReverseProxy
 }
-
-const defaultEndpoint = "https://api.github.com"
 
 var pathRegexp = regexp.MustCompile("^/github/?")
 var allowedRegexp = regexp.MustCompile("^/github/(git|contents|pulls|branches)/")
@@ -69,7 +69,7 @@ func (gh *GitHubGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if config.GitHub.Endpoint != "" {
 		endpoint = config.GitHub.Endpoint
 	} else {
-		endpoint = defaultEndpoint
+		endpoint = conf.DefaultGitHubEndpoint
 	}
 	var apiURL string
 	if strings.HasSuffix(endpoint, "/") {
