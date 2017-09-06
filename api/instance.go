@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/imdario/mergo"
 	"github.com/netlify/git-gateway/conf"
 	"github.com/netlify/git-gateway/models"
 	"github.com/pborman/uuid"
@@ -93,9 +92,7 @@ func (a *API) UpdateInstance(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	if params.BaseConfig != nil {
-		if err := mergo.MergeWithOverwrite(i.BaseConfig, params.BaseConfig); err != nil {
-			return internalServerError("Error merging instance configurations").WithInternalError(err)
-		}
+		i.BaseConfig = mergeConfig(i.BaseConfig, params.BaseConfig)
 	}
 
 	if err := a.db.UpdateInstance(i); err != nil {
@@ -114,4 +111,21 @@ func (a *API) DeleteInstance(w http.ResponseWriter, r *http.Request) error {
 
 	w.WriteHeader(http.StatusNoContent)
 	return nil
+}
+
+func mergeConfig(baseConfig *conf.Configuration, newConfig *conf.Configuration) *conf.Configuration {
+	if newConfig.GitHub.AccessToken != "" {
+		baseConfig.GitHub.AccessToken = newConfig.GitHub.AccessToken
+	}
+
+	if newConfig.GitHub.Endpoint != "" {
+		baseConfig.GitHub.Endpoint = newConfig.GitHub.Endpoint
+	}
+
+	if newConfig.GitHub.Repo != "" {
+		baseConfig.GitHub.Repo = newConfig.GitHub.Repo
+	}
+
+	baseConfig.Roles = newConfig.Roles
+	return baseConfig
 }
