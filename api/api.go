@@ -71,7 +71,6 @@ func NewAPIWithVersion(ctx context.Context, globalConfig *conf.GlobalConfigurati
 	r.Get("/health", api.HealthCheck)
 
 	r.Route("/", func(r *router) {
-
 		if globalConfig.MultiInstanceMode {
 			r.Use(api.loadJWSSignatureHeader)
 			r.Use(api.loadInstanceConfig)
