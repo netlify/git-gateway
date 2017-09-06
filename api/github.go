@@ -6,9 +6,6 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"regexp"
-	"strings"
-
-	"github.com/netlify/git-gateway/conf"
 )
 
 // GitHubGateway acts as a proxy to GitHub
@@ -65,19 +62,8 @@ func (gh *GitHubGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var endpoint string
-	if config.GitHub.Endpoint != "" {
-		endpoint = config.GitHub.Endpoint
-	} else {
-		endpoint = conf.DefaultGitHubEndpoint
-	}
-	var apiURL string
-	if strings.HasSuffix(endpoint, "/") {
-		apiURL = endpoint + "repos/" + config.GitHub.Repo
-	} else {
-		apiURL = endpoint + "/repos/" + config.GitHub.Repo
-	}
-
+	endpoint := config.GitHub.Endpoint
+	apiURL := singleJoiningSlash(endpoint, "/repos/"+config.GitHub.Repo)
 	target, err := url.Parse(apiURL)
 	if err != nil {
 		handleError(internalServerError("Unable to process GitHub endpoint"), w, r)

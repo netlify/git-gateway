@@ -30,8 +30,8 @@ func (a *API) GetAppManifest(w http.ResponseWriter, r *http.Request) error {
 	// TODO update to real manifest
 	return sendJSON(w, http.StatusOK, map[string]string{
 		"version":     a.version,
-		"name":        "GoTrue",
-		"description": "GoTrue is a user registration and authentication API",
+		"name":        "GitGateway",
+		"description": "GitGateway is an access control proxy to git repos",
 	})
 }
 
