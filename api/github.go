@@ -18,7 +18,10 @@ var allowedRegexp = regexp.MustCompile("^/github/(git|contents|pulls|branches)/"
 
 func NewGitHubGateway() *GitHubGateway {
 	return &GitHubGateway{
-		proxy: &httputil.ReverseProxy{Director: director},
+		proxy: &httputil.ReverseProxy{
+			Director:  director,
+			Transport: &GitHubTransport{},
+		},
 	}
 }
 
@@ -105,4 +108,15 @@ func (gh *GitHubGateway) authenticate(w http.ResponseWriter, r *http.Request) er
 	}
 
 	return errors.New("Access to endpoint not allowed: your role doesn't allow access")
+}
+
+type GitHubTransport struct{}
+
+func (t *GitHubTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	resp, err := http.DefaultTransport.RoundTrip(r)
+	if err == nil {
+		// remove CORS headers from GitHub and use our own
+		resp.Header.Del("Access-Control-Allow-Origin")
+	}
+	return resp, err
 }
