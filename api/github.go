@@ -14,7 +14,7 @@ type GitHubGateway struct {
 }
 
 var pathRegexp = regexp.MustCompile("^/github/?")
-var allowedRegexp = regexp.MustCompile("^/github/(git|contents|pulls|branches)/")
+var allowedRegexp = regexp.MustCompile("^/github/(git|contents|pulls|branches)/?")
 
 func NewGitHubGateway() *GitHubGateway {
 	return &GitHubGateway{
