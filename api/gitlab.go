@@ -13,19 +13,19 @@ type GitLabGateway struct {
 	proxy *httputil.ReverseProxy
 }
 
-var pathRegexp = regexp.MustCompile("^/gitlab/?")
-var allowedRegexp = regexp.MustCompile("^/gitlab/repository/(files|commits|tree)/?")
+var gitlabPathRegexp = regexp.MustCompile("^/gitlab/?")
+var gitlabAllowedRegexp = regexp.MustCompile("^/gitlab/repository/(files|commits|tree)/?")
 
 func NewGitLabGateway() *GitLabGateway {
 	return &GitLabGateway{
 		proxy: &httputil.ReverseProxy{
-			Director:  director,
+			Director:  gitlabDirector,
 			Transport: &GitLabTransport{},
 		},
 	}
 }
 
-func director(r *http.Request) {
+func gitlabDirector(r *http.Request) {
 	ctx := r.Context()
 	target := getProxyTarget(ctx)
 	accessToken := getAccessToken(ctx)
@@ -34,7 +34,7 @@ func director(r *http.Request) {
 	r.Host = target.Host
 	r.URL.Scheme = target.Scheme
 	r.URL.Host = target.Host
-	r.URL.Path = singleJoiningSlash(target.Path, pathRegexp.ReplaceAllString(r.URL.Path, "/"))
+	r.URL.Path = singleJoiningSlash(target.Path, gitlabPathRegexp.ReplaceAllString(r.URL.Path, "/"))
 	if targetQuery == "" || r.URL.RawQuery == "" {
 		r.URL.RawQuery = targetQuery + r.URL.RawQuery
 	} else {
@@ -65,7 +65,7 @@ func (gl *GitLabGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	endpoint := config.Gitlab.Endpoint
+	endpoint := config.GitLab.Endpoint
 	apiURL := singleJoiningSlash(endpoint, "/repos/"+config.GitLab.Repo)
 	target, err := url.Parse(apiURL)
 	if err != nil {
@@ -86,7 +86,7 @@ func (gl *GitLabGateway) authenticate(w http.ResponseWriter, r *http.Request) er
 		return errors.New("Access to endpoint not allowed: no claims found in Bearer token")
 	}
 
-	if !allowedRegexp.MatchString(r.URL.Path) {
+	if !gitlabAllowedRegexp.MatchString(r.URL.Path) {
 		return errors.New("Access to endpoint not allowed: this part of GitHub's API has been restricted")
 	}
 
