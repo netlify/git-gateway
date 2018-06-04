@@ -76,6 +76,8 @@ func NewAPIWithVersion(ctx context.Context, globalConfig *conf.GlobalConfigurati
 			r.Use(api.loadInstanceConfig)
 		}
 		r.With(api.requireAuthentication).Mount("/github", NewGitHubGateway())
+		r.With(api.requireAuthentication).Mount("/gitlab", NewGitLabGateway())
+		r.With(api.requireAuthentication).Get("/settings", api.Settings)
 	})
 
 	if globalConfig.MultiInstanceMode {

@@ -16,6 +16,12 @@ type GitHubConfig struct {
 	Repo        string `envconfig:"REPO" json:"repo"` // Should be "owner/repo" format
 }
 
+type GitLabConfig struct {
+	AccessToken string `envconfig:"ACCESS_TOKEN" json:"access_token,omitempty"`
+	Endpoint    string `envconfig:"ENDPOINT" json:"endpoint"`
+	Repo        string `envconfig:"REPO" json:"repo"` // Should be "owner/repo" format
+}
+
 // DBConfiguration holds all the database related configuration.
 type DBConfiguration struct {
 	Dialect     string `json:"dialect"`
@@ -47,6 +53,7 @@ type GlobalConfiguration struct {
 type Configuration struct {
 	JWT    JWTConfiguration `json:"jwt"`
 	GitHub GitHubConfig     `envconfig:"GITHUB" json:"github"`
+	GitLab GitLabConfig     `envconfig:"GITLAB" json:"gitlab"`
 	Roles  []string         `envconfig:"ROLES" json:"roles"`
 }
 
