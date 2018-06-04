@@ -49,7 +49,7 @@ func gitlabDirector(r *http.Request) {
 	}
 
 	log := getLogEntry(r)
-	log.Infof("Proxying to GitHub: %v", r.URL.String())
+	log.Infof("Proxying to GitLab: %v", r.URL.String())
 }
 
 func (gl *GitLabGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +69,7 @@ func (gl *GitLabGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	apiURL := singleJoiningSlash(endpoint, "/repos/"+config.GitLab.Repo)
 	target, err := url.Parse(apiURL)
 	if err != nil {
-		handleError(internalServerError("Unable to process GitHub endpoint"), w, r)
+		handleError(internalServerError("Unable to process GitLab endpoint"), w, r)
 		return
 	}
 	ctx = withProxyTarget(ctx, target)
@@ -87,7 +87,7 @@ func (gl *GitLabGateway) authenticate(w http.ResponseWriter, r *http.Request) er
 	}
 
 	if !gitlabAllowedRegexp.MatchString(r.URL.Path) {
-		return errors.New("Access to endpoint not allowed: this part of GitHub's API has been restricted")
+		return errors.New("Access to endpoint not allowed: this part of GitLab's API has been restricted")
 	}
 
 	if len(config.Roles) == 0 {
