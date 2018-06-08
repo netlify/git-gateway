@@ -6,6 +6,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"regexp"
+	"strings"
 )
 
 // GitLabGateway acts as a proxy to Gitlab
@@ -34,7 +35,11 @@ func gitlabDirector(r *http.Request) {
 	r.Host = target.Host
 	r.URL.Scheme = target.Scheme
 	r.URL.Host = target.Host
-	r.URL.Path = singleJoiningSlash(target.Path, gitlabPathRegexp.ReplaceAllString(r.URL.Path, "/"))
+	// We need to set URL.Opaque using the target and r.URL EscapedPath
+	// methods, because the Go stdlib URL parsing automatically converts
+	// %2F to / in URL paths, and GitLab requires %2F to be preserved
+	// as-is.
+	r.URL.Opaque = "//" + target.Host + singleJoiningSlash(target.EscapedPath(), gitlabPathRegexp.ReplaceAllString(r.URL.EscapedPath(), "/"))
 	if targetQuery == "" || r.URL.RawQuery == "" {
 		r.URL.RawQuery = targetQuery + r.URL.RawQuery
 	} else {
@@ -44,8 +49,9 @@ func gitlabDirector(r *http.Request) {
 		// explicitly disable User-Agent so it's not set to default value
 		r.Header.Set("User-Agent", "")
 	}
+	r.Header.Del("Authorization")
 	if r.Method != http.MethodOptions {
-		r.Header.Set("Authorization", "Bearer "+accessToken)
+		r.Header.Set("Private-Token", accessToken)
 	}
 
 	log := getLogEntry(r)
@@ -66,7 +72,10 @@ func (gl *GitLabGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	endpoint := config.GitLab.Endpoint
-	apiURL := singleJoiningSlash(endpoint, "/repos/"+config.GitLab.Repo)
+	// repos in the form of userName/repoName must be encoded as
+	// userName%2FrepoName
+	repo := url.PathEscape(config.GitLab.Repo)
+	apiURL := singleJoiningSlash(endpoint, "/projects/"+repo)
 	target, err := url.Parse(apiURL)
 	if err != nil {
 		handleError(internalServerError("Unable to process GitLab endpoint"), w, r)
@@ -110,13 +119,58 @@ func (gl *GitLabGateway) authenticate(w http.ResponseWriter, r *http.Request) er
 	return errors.New("Access to endpoint not allowed: your role doesn't allow access")
 }
 
+var gitlabLinkRegex = regexp.MustCompile("<(.*?)>")
+var gitlabLinkRelRegex = regexp.MustCompile("rel=\"(.*?)\"")
+
+func rewriteGitlabLinkEntry(linkEntry, endpointAPIURL, proxyAPIURL string) string {
+	linkAndRel := strings.Split(strings.TrimSpace(linkEntry), ";")
+	if len(linkAndRel) != 2 {
+		return linkEntry
+	}
+
+	linkMatch := gitlabLinkRegex.FindStringSubmatch(linkAndRel[0])
+	if len(linkMatch) < 2 {
+		return linkEntry
+	}
+
+	relMatch := gitlabLinkRelRegex.FindStringSubmatch(linkAndRel[1])
+	if len(relMatch) < 2 {
+		return linkEntry
+	}
+
+	proxiedLink := proxyAPIURL + strings.TrimPrefix(linkMatch[1], endpointAPIURL)
+	rel := relMatch[1]
+	return "<" + proxiedLink + ">; rel=\"" + rel + "\""
+}
+
+func rewriteGitlabLinks(linkHeader, endpointAPIURL, proxyAPIURL string) string {
+	linkEntries := strings.Split(linkHeader, ",")
+	finalLinkEntries := make([]string, len(linkEntries), len(linkEntries))
+	for i, linkEntry := range linkEntries {
+		finalLinkEntries[i] = rewriteGitlabLinkEntry(linkEntry, endpointAPIURL, proxyAPIURL)
+	}
+	finalLinkHeader := strings.Join(finalLinkEntries, ",")
+	return finalLinkHeader
+}
+
 type GitLabTransport struct{}
 
 func (t *GitLabTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	ctx := r.Context()
+	config := getConfig(ctx)
 	resp, err := http.DefaultTransport.RoundTrip(r)
 	if err == nil {
-		// remove CORS headers from GitHub and use our own
+		// remove CORS headers from GitLab and use our own
 		resp.Header.Del("Access-Control-Allow-Origin")
+		linkHeader := resp.Header.Get("Link")
+		if linkHeader != "" {
+			endpoint := config.GitLab.Endpoint
+			repo := url.PathEscape(config.GitLab.Repo)
+			apiURL := singleJoiningSlash(endpoint, "/projects/"+repo)
+			newLinkHeader := rewriteGitlabLinks(linkHeader, apiURL, "")
+			resp.Header.Set("Link", newLinkHeader)
+		}
 	}
+
 	return resp, err
 }

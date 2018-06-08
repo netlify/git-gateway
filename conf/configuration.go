@@ -9,6 +9,7 @@ import (
 )
 
 const DefaultGitHubEndpoint = "https://api.github.com"
+const DefaultGitLabEndpoint = "https://gitlab.com/api/v4"
 
 type GitHubConfig struct {
 	AccessToken string `envconfig:"ACCESS_TOKEN" json:"access_token,omitempty"`
@@ -105,5 +106,6 @@ func LoadConfig(filename string) (*Configuration, error) {
 func (config *Configuration) ApplyDefaults() {
 	if config.GitHub.Endpoint == "" {
 		config.GitHub.Endpoint = DefaultGitHubEndpoint
+		config.GitLab.Endpoint = DefaultGitLabEndpoint
 	}
 }
