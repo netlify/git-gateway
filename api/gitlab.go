@@ -49,9 +49,22 @@ func gitlabDirector(r *http.Request) {
 		// explicitly disable User-Agent so it's not set to default value
 		r.Header.Set("User-Agent", "")
 	}
-	r.Header.Del("Authorization")
-	if r.Method != http.MethodOptions {
-		r.Header.Set("Private-Token", accessToken)
+
+	config := getConfig(ctx)
+	tokenType := config.GitLab.AccessTokenType
+
+	if tokenType == "personal_access" {
+		// Private access token
+		r.Header.Del("Authorization")
+		if r.Method != http.MethodOptions {
+			r.Header.Set("Private-Token", accessToken)
+		}
+	} else {
+		// OAuth token
+		r.Header.Del("Authorization")
+		if r.Method != http.MethodOptions {
+			r.Header.Set("Authorization", "Bearer "+accessToken)
+		}
 	}
 
 	log := getLogEntry(r)
