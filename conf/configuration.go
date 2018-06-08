@@ -10,6 +10,7 @@ import (
 
 const DefaultGitHubEndpoint = "https://api.github.com"
 const DefaultGitLabEndpoint = "https://gitlab.com/api/v4"
+const DefaultGitLabTokenType = "oauth"
 
 type GitHubConfig struct {
 	AccessToken string `envconfig:"ACCESS_TOKEN" json:"access_token,omitempty"`
@@ -18,9 +19,10 @@ type GitHubConfig struct {
 }
 
 type GitLabConfig struct {
-	AccessToken string `envconfig:"ACCESS_TOKEN" json:"access_token,omitempty"`
-	Endpoint    string `envconfig:"ENDPOINT" json:"endpoint"`
-	Repo        string `envconfig:"REPO" json:"repo"` // Should be "owner/repo" format
+	AccessToken     string `envconfig:"ACCESS_TOKEN" json:"access_token,omitempty"`
+	AccessTokenType string `envconfig:"ACCESS_TOKEN_TYPE" json:"access_token_type"`
+	Endpoint        string `envconfig:"ENDPOINT" json:"endpoint"`
+	Repo            string `envconfig:"REPO" json:"repo"` // Should be "owner/repo" format
 }
 
 // DBConfiguration holds all the database related configuration.
@@ -106,6 +108,11 @@ func LoadConfig(filename string) (*Configuration, error) {
 func (config *Configuration) ApplyDefaults() {
 	if config.GitHub.Endpoint == "" {
 		config.GitHub.Endpoint = DefaultGitHubEndpoint
+	}
+	if config.GitLab.Endpoint == "" {
 		config.GitLab.Endpoint = DefaultGitLabEndpoint
+	}
+	if config.GitLab.AccessTokenType == "" {
+		config.GitLab.AccessTokenType = DefaultGitLabTokenType
 	}
 }
