@@ -77,6 +77,7 @@ func NewAPIWithVersion(ctx context.Context, globalConfig *conf.GlobalConfigurati
 		}
 		r.With(api.requireAuthentication).Mount("/github", NewGitHubGateway())
 		r.With(api.requireAuthentication).Mount("/gitlab", NewGitLabGateway())
+		r.With(api.requireAuthentication).Mount("/bitbucket", NewBitBucketGateway())
 		r.With(api.requireAuthentication).Get("/settings", api.Settings)
 	})
 
