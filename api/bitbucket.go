@@ -1,12 +1,16 @@
 package api
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"regexp"
+	"strings"
 	"sync"
 
 	"golang.org/x/oauth2"
@@ -169,13 +173,57 @@ func (bb *BitBucketGateway) authenticate(w http.ResponseWriter, r *http.Request)
 	return errors.New("Access to endpoint not allowed: your role doesn't allow access")
 }
 
+func rewriteBitBucketLink(link, endpointAPIURL, proxyAPIURL string) string {
+	return proxyAPIURL + strings.TrimPrefix(link, endpointAPIURL)
+}
+
+func rewriteLinksInBitBucketResponse(resp *http.Response, endpointAPIURL, proxyAPIURL string) error {
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	var b map[string]interface{}
+	if err := json.Unmarshal(body, &b); err != nil {
+		return err
+	}
+
+	if next, ok := b["next"].(string); ok {
+		b["next"] = rewriteBitBucketLink(next, endpointAPIURL, proxyAPIURL)
+	}
+
+	if prev, ok := b["previous"].(string); ok {
+		b["previous"] = rewriteBitBucketLink(prev, endpointAPIURL, proxyAPIURL)
+	}
+
+	newBody, err := json.Marshal(b)
+	println(newBody)
+	resp.Body = ioutil.NopCloser(bytes.NewReader(newBody))
+
+	return nil
+}
+
 type BitBucketTransport struct{}
 
 func (t *BitBucketTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	ctx := r.Context()
+	config := getConfig(ctx)
 	resp, err := http.DefaultTransport.RoundTrip(r)
-	if err == nil {
-		// remove CORS headers from BitBucket and use our own
-		resp.Header.Del("Access-Control-Allow-Origin")
+	if err != nil {
+		return resp, err
 	}
-	return resp, err
+
+	// remove CORS headers from BitBucket and use our own
+	resp.Header.Del("Access-Control-Allow-Origin")
+
+	if strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") {
+		repo := config.BitBucket.Repo
+		apiURL := singleJoiningSlash(config.BitBucket.Endpoint, "/repositories/"+repo)
+		err = rewriteLinksInBitBucketResponse(resp, apiURL, "")
+		if err != nil {
+			return resp, err
+		}
+	}
+
+	return resp, nil
 }
