@@ -2,9 +2,11 @@ package api
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
@@ -178,14 +180,26 @@ func rewriteBitBucketLink(link, endpointAPIURL, proxyAPIURL string) string {
 }
 
 func rewriteLinksInBitBucketResponse(resp *http.Response, endpointAPIURL, proxyAPIURL string) error {
-	body, err := ioutil.ReadAll(resp.Body)
+	var bodyReader io.ReadCloser
+	var err error
+	switch resp.Header.Get("Content-Encoding") {
+	case "gzip":
+		bodyReader, err = gzip.NewReader(resp.Body)
+		if err != nil {
+			return nil
+		}
+		defer bodyReader.Close()
+	default:
+		bodyReader = resp.Body
+	}
+	body, err := ioutil.ReadAll(bodyReader)
 	if err != nil {
-		return err
+		return nil
 	}
 
 	var b map[string]interface{}
 	if err := json.Unmarshal(body, &b); err != nil {
-		return err
+		return nil
 	}
 
 	if next, ok := b["next"].(string); ok {
@@ -196,9 +210,21 @@ func rewriteLinksInBitBucketResponse(resp *http.Response, endpointAPIURL, proxyA
 		b["previous"] = rewriteBitBucketLink(prev, endpointAPIURL, proxyAPIURL)
 	}
 
-	newBody, err := json.Marshal(b)
-	println(newBody)
-	resp.Body = ioutil.NopCloser(bytes.NewReader(newBody))
+	newBodyBytes, err := json.Marshal(b)
+
+	switch resp.Header.Get("Content-Encoding") {
+	case "gzip":
+		var compressedBody bytes.Buffer
+		w := gzip.NewWriter(&compressedBody)
+		defer w.Close()
+		_, err = w.Write(newBodyBytes)
+		if err != nil {
+			return err
+		}
+		resp.Body = ioutil.NopCloser(&compressedBody)
+	default:
+		resp.Body = ioutil.NopCloser(bytes.NewReader(newBodyBytes))
+	}
 
 	return nil
 }
