@@ -6,17 +6,26 @@ When building sites with a JAMstack approach, a common pattern is to store all c
 
 Netlify CMS is an open-source content management UI that allows content editors to work with your content in Git through a familiar content editing interface. This allows people to write and edit content without having to write code or know anything about Git, markdown, YAML, JSON, etc.
 
-However, for most use cases you won’t want to require all content editors to have a GitHub account with full access to the source code repository for your website.
+However, for most use cases you won’t want to require all content editors to have an account with full access to the source code repository for your website.
 
-Netlify’s Git Gateway lets you setup a gateway to GitHub’s API (more providers coming) that lets tools like Netlify CMS work with content, branches and pull requests on your users’ behalf.
+Netlify’s Git Gateway lets you setup a gateway to your choice of Git provider's API ( now available with both GitHub and GitLab 🎉 ) that lets tools like Netlify CMS work with content, branches and pull requests on your users’ behalf.
 
 The Git Gateway works with any identity service that can issue JWTs and only allows access when a JSON Web Token with sufficient permissions is present.
 
-To configure the gateway, see our example.env file
+To configure the gateway, see our `example.env` file
 
 The Gateway limits access to the following sub endpoints of the repository:
 
-    /repos/:owner/:name/git/
-    /repos/:owner/:name/contents/
-    /repos/:owner/:name/pulls/
-    /repos/:owner/:name/branches/
+for GitHub:
+```
+   /repos/:owner/:name/git/
+   /repos/:owner/:name/contents/
+   /repos/:owner/:name/pulls/
+   /repos/:owner/:name/branches/
+```
+for GitLab:
+```
+   /repos/:owner/:name/files/
+   /repos/:owner/:name/commits/
+   /repos/:owner/:name/tree/
+```
