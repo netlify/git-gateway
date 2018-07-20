@@ -11,6 +11,7 @@ import (
 const DefaultGitHubEndpoint = "https://api.github.com"
 const DefaultGitLabEndpoint = "https://gitlab.com/api/v4"
 const DefaultGitLabTokenType = "oauth"
+const DefaultBitBucketEndpoint = "https://api.bitbucket.org/2.0"
 
 type GitHubConfig struct {
 	AccessToken string `envconfig:"ACCESS_TOKEN" json:"access_token,omitempty"`
@@ -23,6 +24,14 @@ type GitLabConfig struct {
 	AccessTokenType string `envconfig:"ACCESS_TOKEN_TYPE" json:"access_token_type"`
 	Endpoint        string `envconfig:"ENDPOINT" json:"endpoint"`
 	Repo            string `envconfig:"REPO" json:"repo"` // Should be "owner/repo" format
+}
+
+type BitBucketConfig struct {
+	RefreshToken string `envconfig:"REFRESH_TOKEN" json:"refresh_token,omitempty"`
+	ClientID     string `envconfig:"CLIENT_ID" json:"client_id,omitempty"`
+	ClientSecret string `envconfig:"CLIENT_SECRET" json:"client_secret,omitempty"`
+	Endpoint     string `envconfig:"ENDPOINT" json:"endpoint"`
+	Repo         string `envconfig:"REPO" json:"repo"`
 }
 
 // DBConfiguration holds all the database related configuration.
@@ -54,10 +63,11 @@ type GlobalConfiguration struct {
 
 // Configuration holds all the per-instance configuration.
 type Configuration struct {
-	JWT    JWTConfiguration `json:"jwt"`
-	GitHub GitHubConfig     `envconfig:"GITHUB" json:"github"`
-	GitLab GitLabConfig     `envconfig:"GITLAB" json:"gitlab"`
-	Roles  []string         `envconfig:"ROLES" json:"roles"`
+	JWT       JWTConfiguration `json:"jwt"`
+	GitHub    GitHubConfig     `envconfig:"GITHUB" json:"github"`
+	GitLab    GitLabConfig     `envconfig:"GITLAB" json:"gitlab"`
+	BitBucket BitBucketConfig  `envconfig:"BITBUCKET" json:"bitbucket"`
+	Roles     []string         `envconfig:"ROLES" json:"roles"`
 }
 
 func loadEnvironment(filename string) error {
@@ -114,5 +124,8 @@ func (config *Configuration) ApplyDefaults() {
 	}
 	if config.GitLab.AccessTokenType == "" {
 		config.GitLab.AccessTokenType = DefaultGitLabTokenType
+	}
+	if config.BitBucket.Endpoint == "" {
+		config.BitBucket.Endpoint = DefaultBitBucketEndpoint
 	}
 }
