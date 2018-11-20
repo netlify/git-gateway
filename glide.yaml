@@ -2,6 +2,8 @@ package: github.com/netlify/git-gateway
 import:
 - package: github.com/dgrijalva/jwt-go
   version: v3.0.0
+- package: github.com/okta/okta-jwt-verifier-golang
+  version: 04702def3e1b9b1c6b419c9c3aae1ec184a5d4b2
 - package: github.com/jinzhu/gorm
   version: 5b8c0dd6b92d9caa8036c31dcb117f2df7cceefa
 - package: github.com/pborman/uuid

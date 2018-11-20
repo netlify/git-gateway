@@ -1,4 +1,5 @@
 .env
+my.env
 gorm.db
 vendor/
 git-gateway

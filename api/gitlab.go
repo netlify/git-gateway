@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -79,8 +78,8 @@ func (gl *GitLabGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := gl.authenticate(w, r); err != nil {
-		handleError(unauthorizedError(err.Error()), w, r)
+	if !gitlabAllowedRegexp.MatchString(r.URL.Path) {
+		handleError(unauthorizedError("Access to endpoint not allowed: this part of GitLab's API has been restricted"), w, r)
 		return
 	}
 
@@ -97,39 +96,6 @@ func (gl *GitLabGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx = withProxyTarget(ctx, target)
 	ctx = withAccessToken(ctx, config.GitLab.AccessToken)
 	gl.proxy.ServeHTTP(w, r.WithContext(ctx))
-}
-
-func (gl *GitLabGateway) authenticate(w http.ResponseWriter, r *http.Request) error {
-	ctx := r.Context()
-	claims := getClaims(ctx)
-	config := getConfig(ctx)
-
-	if claims == nil {
-		return errors.New("Access to endpoint not allowed: no claims found in Bearer token")
-	}
-
-	if !gitlabAllowedRegexp.MatchString(r.URL.Path) {
-		return errors.New("Access to endpoint not allowed: this part of GitLab's API has been restricted")
-	}
-
-	if len(config.Roles) == 0 {
-		return nil
-	}
-
-	roles, ok := claims.AppMetaData["roles"]
-	if ok {
-		roleStrings, _ := roles.([]interface{})
-		for _, data := range roleStrings {
-			role, _ := data.(string)
-			for _, adminRole := range config.Roles {
-				if role == adminRole {
-					return nil
-				}
-			}
-		}
-	}
-
-	return errors.New("Access to endpoint not allowed: your role doesn't allow access")
 }
 
 var gitlabLinkRegex = regexp.MustCompile("<(.*?)>")
