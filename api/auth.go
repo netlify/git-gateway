@@ -53,7 +53,7 @@ func NewAuthWithVersion(ctx context.Context, version string) *Auth {
 		auth.authenticator = &OktaJWTAuthenticator{name: "bearer-okta-jwt-token", auth: *auth}
 	} else {
 		if (authenticatorName != "") {
-			logrus.Fatal("Authenticator `%v` is not recognized", authenticatorName)
+			logrus.Fatal("Authenticator `" + authenticatorName + "` is not recognized")
 		} else {
 			logrus.Fatal("Authenticator is not defined")
 		}
