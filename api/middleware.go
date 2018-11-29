@@ -80,7 +80,7 @@ func (a *API) verifyOperatorRequest(w http.ResponseWriter, req *http.Request) (c
 }
 
 func (a *API) extractOperatorRequest(w http.ResponseWriter, req *http.Request) (context.Context, string, error) {
-	token, err := a.extractBearerToken(w, req)
+	token, err := a.auth.extractBearerToken(w, req)
 	if err != nil {
 		return nil, token, err
 	}

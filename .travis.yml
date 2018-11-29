@@ -11,10 +11,18 @@ addons:
       - mongodb-org-server
 
 go:
-  - 1.8
+  - 1.11
 
 env:
   - git-gateway_MONGODB_TEST_CONN_URL=127.0.0.1
+
+before_install:
+  # git-gateway consists of multiple Go packages, which refer to each other by
+  # their absolute GitHub path, e.g. github.com/netlify/git-gateway/api
+  # That means, by default, if someone forks the repo, Travis won't pass for the
+  # branch on their own repo. To fix that, we move the directory
+  - mkdir -p $TRAVIS_BUILD_DIR $GOPATH/src/github.com/netlify
+  - test ! -d $GOPATH/src/github.com/netlify/git-gateway && mv $TRAVIS_BUILD_DIR $GOPATH/src/github.com/netlify/git-gateway || true
 
 install: make deps
 script: make all

@@ -27,6 +27,7 @@ var bearerRegexp = regexp.MustCompile(`^(?:B|b)earer (\S+$)`)
 type API struct {
 	handler http.Handler
 	db      storage.Connection
+	auth    Auth
 	config  *conf.GlobalConfiguration
 	version string
 }
@@ -58,7 +59,8 @@ func NewAPI(globalConfig *conf.GlobalConfiguration, db storage.Connection) *API 
 
 // NewAPIWithVersion creates a new REST API using the specified version
 func NewAPIWithVersion(ctx context.Context, globalConfig *conf.GlobalConfiguration, db storage.Connection, version string) *API {
-	api := &API{config: globalConfig, db: db, version: version}
+	auth := NewAuthWithVersion(ctx, version)
+	api := &API{config: globalConfig, db: db, auth: *auth, version: version}
 
 	xffmw, _ := xff.Default()
 
@@ -75,10 +77,10 @@ func NewAPIWithVersion(ctx context.Context, globalConfig *conf.GlobalConfigurati
 			r.Use(api.loadJWSSignatureHeader)
 			r.Use(api.loadInstanceConfig)
 		}
-		r.With(api.requireAuthentication).Mount("/github", NewGitHubGateway())
-		r.With(api.requireAuthentication).Mount("/gitlab", NewGitLabGateway())
-		r.With(api.requireAuthentication).Mount("/bitbucket", NewBitBucketGateway())
-		r.With(api.requireAuthentication).Get("/settings", api.Settings)
+		r.With(api.auth.accessControl).Mount("/github", NewGitHubGateway())
+		r.With(api.auth.accessControl).Mount("/gitlab", NewGitLabGateway())
+		r.With(api.auth.accessControl).Mount("/bitbucket", NewBitBucketGateway())
+		r.With(api.auth.accessControl).Get("/settings", api.Settings)
 	})
 
 	if globalConfig.MultiInstanceMode {
