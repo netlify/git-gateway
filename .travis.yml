@@ -11,7 +11,9 @@ addons:
       - mongodb-org-server
 
 go:
-  - 1.8
+  - "1.9"
+  - "1.10"
+  - "1.11"
 
 env:
   - git-gateway_MONGODB_TEST_CONN_URL=127.0.0.1
