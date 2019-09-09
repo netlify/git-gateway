@@ -11,7 +11,7 @@ build: ## Build the binary.
 
 deps: ## Install dependencies.
 	@go get -u github.com/golang/lint/golint
-	@go get -u github.com/Masterminds/glide && glide install
+	@go mod download
 
 image: ## Build the Docker image.
 	docker build .
