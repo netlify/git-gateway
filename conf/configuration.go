@@ -5,7 +5,6 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/netlify/netlify-commons/nconf"
 )
 
 const DefaultGitHubEndpoint = "https://api.github.com"
@@ -56,8 +55,8 @@ type GlobalConfiguration struct {
 		Endpoint string
 	}
 	DB                DBConfiguration
-	Logging           nconf.LoggingConfig `envconfig:"LOG"`
-	OperatorToken     string              `split_words:"true"`
+	Logging           LoggingConfig `envconfig:"LOG"`
+	OperatorToken     string        `split_words:"true"`
 	MultiInstanceMode bool
 }
 
@@ -94,7 +93,7 @@ func LoadGlobal(filename string) (*GlobalConfiguration, error) {
 	if err := envconfig.Process("gitgateway", config); err != nil {
 		return nil, err
 	}
-	if _, err := nconf.ConfigureLogging(&config.Logging); err != nil {
+	if _, err := ConfigureLogging(&config.Logging); err != nil {
 		return nil, err
 	}
 	return config, nil
