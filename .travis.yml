@@ -11,7 +11,6 @@ addons:
       - mongodb-org-server
 
 go:
-  - "1.12"
   - "1.13"
 
 env:
