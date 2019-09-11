@@ -1,4 +1,4 @@
-FROM netlify/go-glide
+FROM golang:1.13
 
 ADD . /go/src/github.com/netlify/git-gateway
 

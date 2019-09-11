@@ -10,8 +10,8 @@ build: ## Build the binary.
 	go build -ldflags "-X github.com/netlify/git-gateway/cmd.Version=`git rev-parse HEAD`"
 
 deps: ## Install dependencies.
-	@go get -u github.com/golang/lint/golint
-	@go get -u github.com/Masterminds/glide && glide install
+	@go get -u golang.org/x/lint/golint
+	@go mod download
 
 image: ## Build the Docker image.
 	docker build .

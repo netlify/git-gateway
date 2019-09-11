@@ -3,14 +3,17 @@ package api
 import (
 	"context"
 	"net/http"
+	"os"
+	"os/signal"
 	"regexp"
+	"syscall"
+	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/chi"
 	"github.com/netlify/git-gateway/conf"
 	"github.com/netlify/git-gateway/storage"
 	"github.com/netlify/git-gateway/storage/dial"
-	"github.com/netlify/netlify-commons/graceful"
 	"github.com/rs/cors"
 	"github.com/sebest/xff"
 	"github.com/sirupsen/logrus"
@@ -41,13 +44,34 @@ type GatewayClaims struct {
 // ListenAndServe starts the REST API
 func (a *API) ListenAndServe(hostAndPort string) {
 	log := logrus.WithField("component", "api")
-	server := graceful.NewGracefulServer(a.handler, log)
-	if err := server.Bind(hostAndPort); err != nil {
-		log.WithError(err).Fatal("http server bind failed")
-	}
 
-	if err := server.Listen(); err != nil {
-		log.WithError(err).Fatal("http server listen failed")
+	server := &http.Server{
+		Addr:    hostAndPort,
+		Handler: a.handler,
+	}
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		waitForTermination(log, done)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		server.Shutdown(ctx)
+	}()
+
+	if err := server.ListenAndServe(); err != nil {
+		log.WithError(err).Fatal("API server failed")
+	}
+}
+
+// waitForShutdown blocks until the system signals termination or done has a value
+func waitForTermination(log logrus.FieldLogger, done <-chan struct{}) {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	select {
+	case sig := <-signals:
+		log.Infof("Triggering shutdown from signal %s", sig)
+	case <-done:
+		log.Infof("Shutting down...")
 	}
 }
 
