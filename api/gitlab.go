@@ -73,7 +73,8 @@ func gitlabDirector(r *http.Request) {
 	}
 
 	log := getLogEntry(r)
-	log.Infof("Proxying to GitLab: %v", r.URL.String())
+	log.WithField("token_type", tokenType).
+		Infof("Proxying to GitLab: %v", r.URL.String())
 }
 
 func (gl *GitLabGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -188,6 +189,12 @@ func (t *GitLabTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 			newLinkHeader := rewriteGitlabLinks(linkHeader, apiURL, "")
 			resp.Header.Set("Link", newLinkHeader)
 		}
+
+		logEntrySetFields(r, logrus.Fields{
+			"gitlab_ratelimit_remaining": r.Header.Get("ratelimit-remaining"),
+			"gitlab_request_id":          r.Header.Get("X-Request-Id"),
+			"gitlab_lb":                  resp.Header.Get("gitlab-lb"),
+		})
 
 		if resp.StatusCode >= http.StatusInternalServerError {
 			log := getLogEntry(r)
