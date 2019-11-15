@@ -20,8 +20,9 @@ var gitlabAllowedRegexp = regexp.MustCompile("^/gitlab/repository/(files|commits
 func NewGitLabGateway() *GitLabGateway {
 	return &GitLabGateway{
 		proxy: &httputil.ReverseProxy{
-			Director:  gitlabDirector,
-			Transport: &GitLabTransport{},
+			Director:     gitlabDirector,
+			Transport:    &GitLabTransport{},
+			ErrorHandler: proxyErrorHandler,
 		},
 	}
 }

@@ -26,8 +26,9 @@ type BitBucketGateway struct {
 func NewBitBucketGateway() *BitBucketGateway {
 	return &BitBucketGateway{
 		proxy: &httputil.ReverseProxy{
-			Director:  bitbucketDirector,
-			Transport: &BitBucketTransport{},
+			Director:     bitbucketDirector,
+			Transport:    &BitBucketTransport{},
+			ErrorHandler: proxyErrorHandler,
 		},
 	}
 }
