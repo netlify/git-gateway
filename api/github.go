@@ -19,8 +19,9 @@ var allowedRegexp = regexp.MustCompile("^/github/((git|contents|pulls|branches|m
 func NewGitHubGateway() *GitHubGateway {
 	return &GitHubGateway{
 		proxy: &httputil.ReverseProxy{
-			Director:  director,
-			Transport: &GitHubTransport{},
+			Director:     director,
+			Transport:    &GitHubTransport{},
+			ErrorHandler: proxyErrorHandler,
 		},
 	}
 }

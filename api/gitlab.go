@@ -1,12 +1,16 @@
 package api
 
 import (
+	"bytes"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 // GitLabGateway acts as a proxy to Gitlab
@@ -20,8 +24,9 @@ var gitlabAllowedRegexp = regexp.MustCompile("^/gitlab/repository/(files|commits
 func NewGitLabGateway() *GitLabGateway {
 	return &GitLabGateway{
 		proxy: &httputil.ReverseProxy{
-			Director:  gitlabDirector,
-			Transport: &GitLabTransport{},
+			Director:     gitlabDirector,
+			Transport:    &GitLabTransport{},
+			ErrorHandler: proxyErrorHandler,
 		},
 	}
 }
@@ -68,7 +73,8 @@ func gitlabDirector(r *http.Request) {
 	}
 
 	log := getLogEntry(r)
-	log.Infof("Proxying to GitLab: %v", r.URL.String())
+	log.WithField("token_type", tokenType).
+		Infof("Proxying to GitLab: %v", r.URL.String())
 }
 
 func (gl *GitLabGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -182,6 +188,28 @@ func (t *GitLabTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 			apiURL := singleJoiningSlash(endpoint, "/projects/"+repo)
 			newLinkHeader := rewriteGitlabLinks(linkHeader, apiURL, "")
 			resp.Header.Set("Link", newLinkHeader)
+		}
+
+		logEntrySetFields(r, logrus.Fields{
+			"gitlab_ratelimit_remaining": r.Header.Get("ratelimit-remaining"),
+			"gitlab_request_id":          r.Header.Get("X-Request-Id"),
+			"gitlab_lb":                  resp.Header.Get("gitlab-lb"),
+		})
+
+		if resp.StatusCode >= http.StatusInternalServerError {
+			log := getLogEntry(r)
+
+			bodyContent, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.WithError(err).Warn("Failed reading response body while handling server error")
+				bodyContent = []byte{}
+			}
+			resp.Body = ioutil.NopCloser(bytes.NewBuffer(bodyContent))
+
+			log.WithFields(logrus.Fields{
+				"status": resp.StatusCode,
+				"body":   string(bodyContent),
+			}).Warn("Proxied host returned server error")
 		}
 	}
 

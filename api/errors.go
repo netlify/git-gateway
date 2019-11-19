@@ -165,3 +165,9 @@ func handleError(err error, w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+func proxyErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
+	log := getLogEntry(r)
+	log.WithError(err).Warn("Failed proxying request")
+	w.WriteHeader(http.StatusBadGateway)
+}
