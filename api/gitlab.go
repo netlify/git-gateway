@@ -55,6 +55,14 @@ func gitlabDirector(r *http.Request) {
 		r.Header.Set("User-Agent", "")
 	}
 
+	log := getLogEntry(r)
+
+	// remove header which causes false positives for blocking on Gitlab loadbalancers
+	if clientIP := r.Header.Get("Client-IP"); clientIP != "" {
+		log.WithField("client_ip", clientIP).Info("Detected client ip header present. Removing...")
+		r.Header.Del("Client-IP")
+	}
+
 	config := getConfig(ctx)
 	tokenType := config.GitLab.AccessTokenType
 
@@ -72,7 +80,6 @@ func gitlabDirector(r *http.Request) {
 		}
 	}
 
-	log := getLogEntry(r)
 	log.WithField("token_type", tokenType).
 		Infof("Proxying to GitLab: %v", r.URL.String())
 }
