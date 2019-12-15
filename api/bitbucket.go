@@ -213,6 +213,10 @@ func rewriteLinksInBitBucketResponse(resp *http.Response, endpointAPIURL, proxyA
 
 	newBodyBytes, err := json.Marshal(b)
 
+	if err != nil {
+		return err
+	}
+
 	switch resp.Header.Get("Content-Encoding") {
 	case "gzip":
 		var compressedBody bytes.Buffer
