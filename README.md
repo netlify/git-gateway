@@ -22,6 +22,9 @@ for GitHub:
    /repos/:owner/:name/contents/
    /repos/:owner/:name/pulls/
    /repos/:owner/:name/branches/
+   /repos/:owner/:name/merges/
+   /repos/:owner/:name/statuses/
+   /repos/:owner/:name/compare/
 ```
 for GitLab:
 ```
