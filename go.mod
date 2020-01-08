@@ -19,7 +19,7 @@ require (
 	github.com/joho/godotenv v0.0.0-20161216230537-726cc8b906e3
 	github.com/kelseyhightower/envconfig v1.3.0
 	github.com/lib/pq v0.0.0-20170810061220-e42267488fe3
-	github.com/mattn/go-sqlite3 v1.1.0
+	github.com/mattn/go-sqlite3 v2.0.2+incompatible
 	github.com/pborman/uuid v0.0.0-20160209185913-a97ce2ca70fa
 	github.com/pkg/errors v0.8.0
 	github.com/pmezard/go-difflib v0.0.0-20151028094244-d8ed2627bdf0 // indirect
