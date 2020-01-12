@@ -28,7 +28,10 @@ for GitHub:
 ```
 for GitLab:
 ```
-   /repos/:owner/:name/files/
-   /repos/:owner/:name/commits/
-   /repos/:owner/:name/tree/
+   /projects/:owner/:name/repository/merge_requests/
+   /projects/:owner/:name/repository/files/
+   /projects/:owner/:name/repository/commits/
+   /projects/:owner/:name/repository/tree/
+   /projects/:owner/:name/repository/compare/
+   /projects/:owner/:name/repository/branches/
 ```
