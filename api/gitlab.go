@@ -45,6 +45,19 @@ func gitlabDirector(r *http.Request) {
 	// %2F to / in URL paths, and GitLab requires %2F to be preserved
 	// as-is.
 	r.URL.Opaque = "//" + target.Host + singleJoiningSlash(target.EscapedPath(), gitlabPathRegexp.ReplaceAllString(r.URL.EscapedPath(), "/"))
+	if strings.Contains(r.URL.Path, "/raw") {
+		// get file path in repository
+		getTargetPath := gitlabAllowedRegexp.ReplaceAllString(r.URL.EscapedPath(), "")
+		// get only /repository/files/
+		gitlabPath := gitlabPathRegexp.ReplaceAllString(r.URL.EscapedPath(), "/")
+		gitlabPath = strings.ReplaceAll(gitlabPath, getTargetPath, "")
+		// first remove /raw, so we can preserve / in %2F form
+		// as GitLab specification to get files, especially inside subfolder
+		// then re-compile gitlabPath and /raw to URL.Opaque .
+		getTargetPath = strings.ReplaceAll(getTargetPath, "/raw", "")
+		getTargetPath = gitlabPath + strings.ReplaceAll(getTargetPath, "/", "%2F") + "/raw"
+		r.URL.Opaque = "//" + target.Host + singleJoiningSlash(target.EscapedPath(), getTargetPath)
+	}
 	if targetQuery == "" || r.URL.RawQuery == "" {
 		r.URL.RawQuery = targetQuery + r.URL.RawQuery
 	} else {
