@@ -20,6 +20,7 @@ type GitLabGateway struct {
 
 var gitlabPathRegexp = regexp.MustCompile("^/gitlab/?")
 var gitlabAllowedRegexp = regexp.MustCompile("^/gitlab/(merge_requests|(repository/(files|commits|tree|compare|branches)))/?")
+var gitlabEndPathRegexp = regexp.MustCompile("/(raw|rebase|merge|statuses)")
 
 func NewGitLabGateway() *GitLabGateway {
 	return &GitLabGateway{
@@ -50,16 +51,16 @@ func gitlabDirector(r *http.Request) {
 	// get only /repository/files/
 	gitlabPath := gitlabPathRegexp.ReplaceAllString(r.URL.EscapedPath(), "/")
 	gitlabPath = strings.ReplaceAll(gitlabPath, getTargetPath, "")
-	if strings.Contains(r.URL.Path, "/raw") {
-		// first remove /raw, so we can preserve / in %2F form
-		// as GitLab specification to get files, especially inside subfolder
-		// then re-compile gitlabPath and /raw to URL.Opaque .
-		getTargetPath = strings.ReplaceAll(getTargetPath, "/raw", "")
-		getTargetPath = gitlabPath + strings.ReplaceAll(getTargetPath, "/", "%2F") + "/raw"
-	} else {
-		getTargetPath = gitlabPath + strings.ReplaceAll(getTargetPath, "/", "%2F")
+	// get contents only, ex: content/posts/2020-01-mypost.md/raw -> content/posts/2020-01-mypost.md
+	getContentOnly := gitlabEndPathRegexp.ReplaceAllString(getTargetPath, "")
+	// get only end path (/raw /rebase /merge /statuses)
+	getEndPath := strings.Split(getTargetPath, getContentOnly)
+	if len(getEndPath) == 2 {
+		// Only combine when we exactly got 2 splitted contents
+		// 0 -> contents, 1 -> endpath
+		getTargetPath = gitlabPath + strings.ReplaceAll(getContentOnly, "/", "%2F") + getEndPath[1]
+		r.URL.Opaque = "//" + target.Host + singleJoiningSlash(target.EscapedPath(), getTargetPath)
 	}
-	r.URL.Opaque = "//" + target.Host + singleJoiningSlash(target.EscapedPath(), getTargetPath)
 	if targetQuery == "" || r.URL.RawQuery == "" {
 		r.URL.RawQuery = targetQuery + r.URL.RawQuery
 	} else {
