@@ -25,7 +25,7 @@ for GitHub:
    /repos/:owner/:name/merges/
    /repos/:owner/:name/statuses/
    /repos/:owner/:name/compare/
-   /repos/:owner/:name/commits/<sha>/status
+   /repos/:owner/:name/commits/
    /repos/:owner/:name/issues/<number>/labels
 ```
 for GitLab:
