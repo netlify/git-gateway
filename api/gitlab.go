@@ -20,7 +20,7 @@ type GitLabGateway struct {
 
 var gitlabPathRegexp = regexp.MustCompile("^/gitlab/?")
 var gitlabAllowedRegexp = regexp.MustCompile("^/gitlab/(merge_requests|(repository/(files|commits|tree|compare|branches)))/?")
-var gitlabEndPathRegexp = regexp.MustCompile("/(raw|rebase|merge|statuses)")
+var gitlabEndPathRegexp = regexp.MustCompile("/(raw|rebase|merge|statuses|refs)")
 
 func NewGitLabGateway() *GitLabGateway {
 	return &GitLabGateway{
