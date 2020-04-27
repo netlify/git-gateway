@@ -50,6 +50,13 @@ func gitlabDirector(r *http.Request) {
 	} else {
 		r.URL.RawQuery = targetQuery + "&" + r.URL.RawQuery
 	}
+
+	log := getLogEntry(r)
+	log.Info("Logging headers..\n")
+	for k, v := range r.Header {
+		log.Infof("Header: %v, Value: %v", k, v)
+	}
+
 	if _, ok := r.Header["User-Agent"]; !ok {
 		// explicitly disable User-Agent so it's not set to default value
 		r.Header.Set("User-Agent", "")
@@ -75,7 +82,7 @@ func gitlabDirector(r *http.Request) {
 		}
 	}
 
-	log := getLogEntry(r)
+
 	log.WithField("token_type", tokenType).
 		Infof("Proxying to GitLab: %v", r.URL.String())
 }

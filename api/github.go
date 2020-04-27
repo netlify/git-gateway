@@ -41,6 +41,13 @@ func director(r *http.Request) {
 	} else {
 		r.URL.RawQuery = targetQuery + "&" + r.URL.RawQuery
 	}
+
+	log := getLogEntry(r)
+	log.Info("Logging headers..\n")
+	for k, v := range r.Header {
+		log.Infof("Header: %v, Value: %v", k, v)
+	}
+
 	if _, ok := r.Header["User-Agent"]; !ok {
 		// explicitly disable User-Agent so it's not set to default value
 		r.Header.Set("User-Agent", "")
@@ -49,7 +56,6 @@ func director(r *http.Request) {
 		r.Header.Set("Authorization", "Bearer "+accessToken)
 	}
 
-	log := getLogEntry(r)
 	log.Infof("Proxying to GitHub: %v", r.URL.String())
 }
 
