@@ -10,7 +10,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.0.0+incompatible
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
 	github.com/go-chi/chi v3.1.4+incompatible
-	github.com/go-sql-driver/mysql v1.3.0
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/protobuf v0.0.0-20170816001514-ab9f9a6dab16 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jinzhu/gorm v0.0.0-20170723080543-5b8c0dd6b92d
