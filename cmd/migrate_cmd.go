@@ -9,7 +9,7 @@ import (
 
 var migrateCmd = cobra.Command{
 	Use:  "migrate",
-	Long: "Migrate database strucutures. This will create new tables and add missing columns and indexes.",
+	Long: "Migrate database structures. This will create new tables and add missing columns and indexes.",
 	Run: func(cmd *cobra.Command, args []string) {
 		execWithConfig(cmd, migrate)
 	},
@@ -20,5 +20,14 @@ func migrate(globalConfig *conf.GlobalConfiguration, config *conf.Configuration)
 	if err != nil {
 		logrus.Fatalf("Error opening database: %+v", err)
 	}
+
 	defer db.Close()
+
+	err = db.Automigrate()
+	if err != nil {
+		logrus.Fatalf("Error automigrating database: %+v", err)
+	}
+
+	logrus.Info("Automigration successful")
+
 }
