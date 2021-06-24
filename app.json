@@ -5,29 +5,29 @@
   "repository": "https://github.com/netlify/git-gateway",
   "env": {
     "DATABASE_URL": {},
-    "git-gateway_DB_DRIVER": {
+    "GITGATEWAY_DB_DRIVER": {
       "value": "sqlite3"
     },
-    "git-gateway_DB_AUTOMIGRATE": {
+    "GITGATEWAY_DB_AUTOMIGRATE": {
       "value": true
     },
-    "git-gateway_DB_NAMESPACE": {
+    "GITGATEWAY_DB_NAMESPACE": {
       "value": "auth"
     },
-    "git-gateway_JWT_SECRET": {
+    "GITGATEWAY_JWT_SECRET": {
       "required": true
     },
-    "git-gateway_MAILER_ADMIN_EMAIL": {},
-    "git-gateway_MAILER_HOST": {},
-    "git-gateway_MAILER_MEMBER_FOLDER": {},
-    "git-gateway_MAILER_PASS": {},
-    "git-gateway_MAILER_PORT": {},
-    "git-gateway_MAILER_SITE_URL": {},
-    "git-gateway_MAILER_SUBJECTS_CONFIRMATION": {},
-    "git-gateway_MAILER_SUBJECTS_RECOVERY": {},
-    "git-gateway_MAILER_TEMPLATES_CONFIRMATION": {},
-    "git-gateway_MAILER_TEMPLATES_EMAIL_CHANGE": {},
-    "git-gateway_MAILER_TEMPLATES_RECOVERY": {},
-    "git-gateway_MAILER_USER": {}
+    "GITGATEWAY_MAILER_ADMIN_EMAIL": {},
+    "GITGATEWAY_MAILER_HOST": {},
+    "GITGATEWAY_MAILER_MEMBER_FOLDER": {},
+    "GITGATEWAY_MAILER_PASS": {},
+    "GITGATEWAY_MAILER_PORT": {},
+    "GITGATEWAY_MAILER_SITE_URL": {},
+    "GITGATEWAY_MAILER_SUBJECTS_CONFIRMATION": {},
+    "GITGATEWAY_MAILER_SUBJECTS_RECOVERY": {},
+    "GITGATEWAY_MAILER_TEMPLATES_CONFIRMATION": {},
+    "GITGATEWAY_MAILER_TEMPLATES_EMAIL_CHANGE": {},
+    "GITGATEWAY_MAILER_TEMPLATES_RECOVERY": {},
+    "GITGATEWAY_MAILER_USER": {}
   }
 }

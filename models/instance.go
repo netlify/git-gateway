@@ -52,7 +52,7 @@ func (i *Instance) BeforeSave() error {
 	return nil
 }
 
-// Config loads the the base configuration values with defaults.
+// Config loads the base configuration values with defaults.
 func (i *Instance) Config() (*conf.Configuration, error) {
 	if i.BaseConfig == nil {
 		return nil, errors.New("no configuration data available")
