@@ -21,6 +21,11 @@ type GitLabGateway struct {
 var gitlabPathRegexp = regexp.MustCompile("^/gitlab/?")
 var gitlabAllowedRegexp = regexp.MustCompile("^/gitlab/(merge_requests|(repository/(files|commits|tree|compare|branches)))/?")
 
+const (
+	gitlabPATPrefix = "glpat-"
+	tokenTypePAT    = "personal_access"
+)
+
 func NewGitLabGateway() *GitLabGateway {
 	return &GitLabGateway{
 		proxy: &httputil.ReverseProxy{
@@ -61,7 +66,11 @@ func gitlabDirector(r *http.Request) {
 	config := getConfig(ctx)
 	tokenType := config.GitLab.AccessTokenType
 
-	if tokenType == "personal_access" {
+	if tokenType == "" && strings.HasPrefix(accessToken, gitlabPATPrefix) {
+		tokenType = tokenTypePAT
+	}
+
+	if tokenType == tokenTypePAT {
 		// Private access token
 		r.Header.Del("Authorization")
 		if r.Method != http.MethodOptions {
