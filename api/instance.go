@@ -126,6 +126,22 @@ func mergeConfig(baseConfig *conf.Configuration, newConfig *conf.Configuration) 
 		baseConfig.GitHub.Repo = newConfig.GitHub.Repo
 	}
 
+	if newConfig.GitLab.AccessToken != "" {
+		baseConfig.GitLab.AccessToken = newConfig.GitLab.AccessToken
+	}
+
+	if newConfig.GitLab.AccessTokenType != "" {
+		baseConfig.GitLab.AccessTokenType = newConfig.GitLab.AccessTokenType
+	}
+
+	if newConfig.GitLab.Endpoint != "" {
+		baseConfig.GitLab.Endpoint = newConfig.GitLab.Endpoint
+	}
+
+	if newConfig.GitLab.Repo != "" {
+		baseConfig.GitLab.Repo = newConfig.GitLab.Repo
+	}
+
 	baseConfig.Roles = newConfig.Roles
 	return baseConfig
 }
