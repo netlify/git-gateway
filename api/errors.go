@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -167,6 +168,10 @@ func handleError(err error, w http.ResponseWriter, r *http.Request) {
 }
 
 func proxyErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
+	if err := r.Context().Err(); errors.Is(err, context.Canceled) {
+		w.WriteHeader(499)
+		return
+	}
 	log := getLogEntry(r)
 	log.WithError(err).Warn("Failed proxying request")
 	w.WriteHeader(http.StatusBadGateway)
