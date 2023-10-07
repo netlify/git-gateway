@@ -16,7 +16,7 @@ func (a *API) requireAuthentication(w http.ResponseWriter, r *http.Request) (con
 		return nil, err
 	}
 
-	logrus.Infof("Parsing JWT claims: %v", token)
+	logrus.Debugf("Parsing JWT claims: %v", token)
 	return a.parseJWTClaims(token, r)
 }
 
