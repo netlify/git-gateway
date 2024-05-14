@@ -176,7 +176,7 @@ func rewriteGitlabLinkEntry(linkEntry, endpointAPIURL, proxyAPIURL string) strin
 
 func rewriteGitlabLinks(linkHeader, endpointAPIURL, proxyAPIURL string) string {
 	linkEntries := strings.Split(linkHeader, ",")
-	finalLinkEntries := make([]string, len(linkEntries), len(linkEntries))
+	finalLinkEntries := make([]string, len(linkEntries))
 	for i, linkEntry := range linkEntries {
 		finalLinkEntries[i] = rewriteGitlabLinkEntry(linkEntry, endpointAPIURL, proxyAPIURL)
 	}
