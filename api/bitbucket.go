@@ -108,7 +108,7 @@ func bitbucketDirector(r *http.Request) {
 	}
 
 	log := getLogEntry(r)
-	log.Infof("Proxying to BitBucket: %v", r.URL.String(), r.Header.Get("Authorization"))
+	log.Infof("Proxying to BitBucket: %v", r.URL.String())
 }
 
 func (bb *BitBucketGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
