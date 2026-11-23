@@ -20,7 +20,11 @@ import (
 )
 
 type BitBucketGateway struct {
-	proxy *httputil.ReverseProxy
+	proxy         *httputil.ReverseProxy
+	oauthEndpoint oauth2.Endpoint
+
+	tokenSourcesMu sync.Mutex
+	tokenSources   map[string]*bitbucketTokenSource
 }
 
 func NewBitBucketGateway() *BitBucketGateway {
@@ -30,6 +34,8 @@ func NewBitBucketGateway() *BitBucketGateway {
 			Transport:    &BitBucketTransport{},
 			ErrorHandler: proxyErrorHandler,
 		},
+		oauthEndpoint: bitbucket.Endpoint,
+		tokenSources:  map[string]*bitbucketTokenSource{},
 	}
 }
 
@@ -37,7 +43,6 @@ var bitbucketPathRegexp = regexp.MustCompile("^/bitbucket/?")
 var bitbucketAllowedRegexp = regexp.MustCompile("^/bitbucket/src/?")
 
 var bitbucketTokenExpirationMessageRegexp = regexp.MustCompile("(?i)^access token expired")
-var currentAccessToken *oauth2.Token
 
 type notifyRefreshTokenSource struct {
 	new oauth2.TokenSource
@@ -59,28 +64,56 @@ func (s *notifyRefreshTokenSource) Token() (*oauth2.Token, error) {
 	return t, nil
 }
 
-var currentTokenSource *notifyRefreshTokenSource
+type bitbucketCredentials struct {
+	refreshToken string
+	clientID     string
+	clientSecret string
+}
 
-func getTokenSource(ctx context.Context) *notifyRefreshTokenSource {
+type bitbucketTokenSource struct {
+	credentials bitbucketCredentials
+	oauth2.TokenSource
+}
+
+// tokenSource returns the token source for the current request's instance ID
+// (retrieved from the specified context).
+func (bb *BitBucketGateway) tokenSource(ctx context.Context) oauth2.TokenSource {
 	config := getConfig(ctx)
-	if currentTokenSource != nil {
-		return currentTokenSource
+	instanceID := getInstanceID(ctx)
+	credentials := bitbucketCredentials{
+		refreshToken: config.BitBucket.RefreshToken,
+		clientID:     config.BitBucket.ClientID,
+		clientSecret: config.BitBucket.ClientSecret,
+	}
+
+	bb.tokenSourcesMu.Lock()
+	defer bb.tokenSourcesMu.Unlock()
+
+	// Cache invalidation: Only use cached token source if the instance's
+	// credentials have not been rotated since the source was cached.
+	if cached, ok := bb.tokenSources[instanceID]; ok && cached.credentials == credentials {
+		return cached
 	}
 
 	blankToken := &oauth2.Token{
 		AccessToken:  "",
-		RefreshToken: config.BitBucket.RefreshToken,
+		RefreshToken: credentials.refreshToken,
 	}
 	oauthConfig := &oauth2.Config{
-		ClientID:     config.BitBucket.ClientID,
-		ClientSecret: config.BitBucket.ClientSecret,
-		Endpoint:     bitbucket.Endpoint,
+		ClientID:     credentials.clientID,
+		ClientSecret: credentials.clientSecret,
+		Endpoint:     bb.oauthEndpoint,
 	}
-	tokenSource := &notifyRefreshTokenSource{
-		new: oauthConfig.TokenSource(ctx, blankToken),
-		t:   blankToken,
+	tokenSource := &bitbucketTokenSource{
+		credentials: credentials,
+		TokenSource: &notifyRefreshTokenSource{
+			// oauth2 will use the specified context for future token refreshes,
+			// so don't give it a request-scoped context.
+			new: oauthConfig.TokenSource(context.Background(), blankToken),
+			t:   blankToken,
+		},
 	}
-	currentTokenSource = tokenSource
+	bb.tokenSources[instanceID] = tokenSource
 	return tokenSource
 }
 
@@ -132,7 +165,7 @@ func (bb *BitBucketGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenSource := getTokenSource(ctx)
+	tokenSource := bb.tokenSource(ctx)
 	token, err := tokenSource.Token()
 	if err != nil {
 		handleError(internalServerError("Unable to process BitBucket endpoint"), w, r)
