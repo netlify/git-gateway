@@ -14,7 +14,7 @@ type GitHubGateway struct {
 }
 
 var pathRegexp = regexp.MustCompile("^/github/?")
-var allowedRegexp = regexp.MustCompile("^/github/((git|contents|pulls|branches|merges|statuses|compare|commits)/?|(issues/(\\d+)/labels))")
+var allowedRegexp = regexp.MustCompile(`^(git|contents|pulls|branches|merges|statuses|compare|commits|issues/\d+/labels)(/.*)?$`)
 
 func NewGitHubGateway() *GitHubGateway {
 	return &GitHubGateway{
@@ -66,6 +66,16 @@ func (gh *GitHubGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	repoPath := pathRegexp.ReplaceAllString(r.URL.Path, "")
+	if err := validateProxyPath(allowedRegexp, repoPath, r.URL.RawQuery); err != nil {
+		if err == errProxyPathNotAllowed {
+			handleError(unauthorizedError("Access to endpoint not allowed: this part of GitHub's API has been restricted"), w, r)
+		} else {
+			handleError(badRequestError("Invalid request URL: %v", err), w, r)
+		}
+		return
+	}
+
 	endpoint := config.GitHub.Endpoint
 	apiURL := singleJoiningSlash(endpoint, "/repos/"+config.GitHub.Repo)
 	target, err := url.Parse(apiURL)
@@ -85,10 +95,6 @@ func (gh *GitHubGateway) authenticate(w http.ResponseWriter, r *http.Request) er
 
 	if claims == nil {
 		return errors.New("Access to endpoint not allowed: no claims found in Bearer token")
-	}
-
-	if !allowedRegexp.MatchString(r.URL.Path) {
-		return errors.New("Access to endpoint not allowed: this part of GitHub's API has been restricted")
 	}
 
 	if len(config.Roles) == 0 {
