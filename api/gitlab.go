@@ -19,7 +19,7 @@ type GitLabGateway struct {
 }
 
 var gitlabPathRegexp = regexp.MustCompile("^/gitlab/?")
-var gitlabAllowedRegexp = regexp.MustCompile("^/gitlab/(merge_requests|(repository/(files|commits|tree|compare|branches)))/?")
+var gitlabAllowedRegexp = regexp.MustCompile(`^(merge_requests|repository/(files|commits|tree|compare|branches))(/.*)?$`)
 
 const (
 	gitlabPATPrefix = "glpat-"
@@ -102,6 +102,21 @@ func (gl *GitLabGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// GitLab takes a file path or branch name as a single path segment with
+	// its slashes encoded as %2F. r.URL.Path decodes those slashes, so
+	// validating it would count "a%2Fb" as two segments where GitLab counts
+	// one, and misjudge how far a ".." after it climbs. Validate the escaped
+	// path, which is also the form gitlabDirector forwards.
+	repoPath := gitlabPathRegexp.ReplaceAllString(r.URL.EscapedPath(), "")
+	if err := validateProxyPath(gitlabAllowedRegexp, repoPath, r.URL.RawQuery); err != nil {
+		if err == errProxyPathNotAllowed {
+			handleError(unauthorizedError("Access to endpoint not allowed: this part of GitLab's API has been restricted"), w, r)
+		} else {
+			handleError(badRequestError("Invalid request URL: %v", err), w, r)
+		}
+		return
+	}
+
 	endpoint := config.GitLab.Endpoint
 	// repos in the form of userName/repoName must be encoded as
 	// userName%2FrepoName
@@ -124,10 +139,6 @@ func (gl *GitLabGateway) authenticate(w http.ResponseWriter, r *http.Request) er
 
 	if claims == nil {
 		return errors.New("Access to endpoint not allowed: no claims found in Bearer token")
-	}
-
-	if !gitlabAllowedRegexp.MatchString(r.URL.Path) {
-		return errors.New("Access to endpoint not allowed: this part of GitLab's API has been restricted")
 	}
 
 	if len(config.Roles) == 0 {

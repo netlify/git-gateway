@@ -34,7 +34,7 @@ func NewBitBucketGateway() *BitBucketGateway {
 }
 
 var bitbucketPathRegexp = regexp.MustCompile("^/bitbucket/?")
-var bitbucketAllowedRegexp = regexp.MustCompile("^/bitbucket/src/?")
+var bitbucketAllowedRegexp = regexp.MustCompile(`^src(/.*)?$`)
 
 var bitbucketTokenExpirationMessageRegexp = regexp.MustCompile("(?i)^access token expired")
 var currentAccessToken *oauth2.Token
@@ -124,6 +124,16 @@ func (bb *BitBucketGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	repoPath := bitbucketPathRegexp.ReplaceAllString(r.URL.Path, "")
+	if err := validateProxyPath(bitbucketAllowedRegexp, repoPath, r.URL.RawQuery); err != nil {
+		if err == errProxyPathNotAllowed {
+			handleError(unauthorizedError("Access to endpoint not allowed: this part of BitBucket's API has been restricted"), w, r)
+		} else {
+			handleError(badRequestError("Invalid request URL: %v", err), w, r)
+		}
+		return
+	}
+
 	endpoint := config.BitBucket.Endpoint
 	apiURL := singleJoiningSlash(endpoint, "/repositories/"+config.BitBucket.Repo)
 	target, err := url.Parse(apiURL)
@@ -150,10 +160,6 @@ func (bb *BitBucketGateway) authenticate(w http.ResponseWriter, r *http.Request)
 
 	if claims == nil {
 		return errors.New("Access to endpoint not allowed: no claims found in Bearer token")
-	}
-
-	if !bitbucketAllowedRegexp.MatchString(r.URL.Path) {
-		return errors.New("Access to endpoint not allowed: this part of BitBucket's API has been restricted")
 	}
 
 	if len(config.Roles) == 0 {
