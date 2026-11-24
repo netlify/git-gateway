@@ -8,8 +8,6 @@ import (
 	"github.com/netlify/git-gateway/conf"
 )
 
-const baseConfigKey = ""
-
 type Instance struct {
 	ID string `json:"id" bson:"_id,omitempty"`
 	// Netlify UUID
